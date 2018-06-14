@@ -1,0 +1,4 @@
+include README.md
+recursive-include src
+graft src
+global-exclude *.pyc
