@@ -356,9 +356,9 @@ class TestFilters(unittest.TestCase):
                             "right": {"type": "value", "value": 42}
                         },
                         {
-                            "type": "==",
+                            "type": "in",
                             "left": {"type": "field", "field": "in_stock"},
-                            "right": {"type": "value", "value": True}
+                            "right": {"type": "value", "value": 't'}
                         }
                     ]
                 },
@@ -390,7 +390,7 @@ class TestFilters(unittest.TestCase):
                         {
                             "type": "selector",
                             "dimension": "in_stock",
-                            "value": True
+                            "value": 't'
                         }
                     ]
                 },
