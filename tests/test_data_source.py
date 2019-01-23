@@ -170,6 +170,32 @@ class TestFilters(unittest.TestCase):
 
     maxDiff = None
 
+    def test_True_is_converted_to_t(self):
+        input_filter = {
+            "type": "==",
+            "left": {"type": "field", "field": "isAnonymous"},
+            "right": {"type": "value", "value": True}
+        }
+        expected_filter = {
+            "type": "selector",
+            "dimension": "isAnonymous",
+            "value": "t"
+        }
+        self.assertEqual(druidry.data_source.translate_filter(input_filter), expected_filter)
+
+    def test_False_is_converted_to_f(self):
+        input_filter = {
+            "type": "==",
+            "left": {"type": "field", "field": "isAnonymous"},
+            "right": {"type": "value", "value": False}
+        }
+        expected_filter = {
+            "type": "selector",
+            "dimension": "isAnonymous",
+            "value": "f"
+        }
+        self.assertEqual(druidry.data_source.translate_filter(input_filter), expected_filter)
+
     def test_equality_field_field_filter(self):
         input_filter = {
             "type": "==",
