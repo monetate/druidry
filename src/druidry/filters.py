@@ -139,6 +139,11 @@ class SelectorFilter(Filter):
     def __init__(self, dimension=None, value=None, **kwargs):
         if not isinstance(dimension, basestring):
             raise ValueError("`dimension` is required to be a string")
+        if isinstance(value, bool):
+            value = {
+                False: 'f',
+                True: 't'
+            }[value]
         super(SelectorFilter, self).__init__(
             type='selector', dimension=dimension, value=value, **kwargs)
 
