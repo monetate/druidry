@@ -30,7 +30,7 @@ DataSourceView
     queries.
 """
 from . import aggregations
-from .filters import Filter, AndFilter, BoundFilter, ColumnComparisonFilter, LikeFilter, OrFilter, SelectorFilter
+from .filters import Filter, AndFilter, BoundFilter, ColumnComparisonFilter, LikeFilter, OrFilter, SelectorFilter, NotFilter
 from .intervals import Interval
 from .queries import GroupByQuery, TimeseriesQuery
 from .results import QueryResult
@@ -322,6 +322,13 @@ def combine_filter(f):
         return OrFilter(fields=filters)
 
 
+def negate_filter(f):
+    filter = translate_filter(f['filter'])
+    if not filter:
+        return None
+    return NotFilter(field=filter)
+
+
 FILTER_TYPES = {
     '==': equality_filter,
     '!=': equality_filter,
@@ -334,7 +341,8 @@ FILTER_TYPES = {
     'endwith': like_filter,
     'startswith': like_filter,
     'and': combine_filter,
-    'or': combine_filter
+    'or': combine_filter,
+    'not': negate_filter
 }
 
 
