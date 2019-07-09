@@ -323,10 +323,10 @@ def combine_filter(f):
 
 
 def negate_filter(f):
-    filter_ = translate_filter(f['filter'])
-    if not filter_:
+    translated_filter = translate_filter(f['filter'])
+    if not translated_filter:
         return None
-    return NotFilter(field=filter_)
+    return NotFilter(field=translated_filter)
 
 
 FILTER_TYPES = {
