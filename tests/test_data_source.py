@@ -1,4 +1,3 @@
-
 from .context import druidry
 import datetime
 import numbers
@@ -33,7 +32,6 @@ class TestDataSource(unittest.TestCase):
 
     def test_create_data_source(self):
         class WikipediaDataSource(druidry.data_source.DataSourceView):
-
             channel = druidry.data_source.CategoricalDimension(
                 dimension='channel', choices=['email', 'web', 'mobile'],
                 has_other_choice=True)
@@ -92,7 +90,6 @@ class TestDataSource(unittest.TestCase):
 
     def test_get_query(self):
         class WikipediaDataSource(druidry.data_source.DataSourceView):
-
             channel = druidry.data_source.CategoricalDimension(
                 dimension='channel', choices=['email', 'web', 'mobile'],
                 has_other_choice=True)
@@ -167,7 +164,6 @@ class TestDataSource(unittest.TestCase):
 
 
 class TestFilters(unittest.TestCase):
-
     maxDiff = None
 
     def test_True_is_converted_to_t(self):
@@ -447,4 +443,94 @@ class TestFilters(unittest.TestCase):
                 }
             ]
         }
+        self.assertEqual(druidry.data_source.translate_filter(input_filter), expected_value)
+
+    def test_negation_does_not_affect_filter_translation(self):
+        """
+        Since Druid provides native support for a "not" field, "not" filters should always
+        be handled the same way: appending a "not" field to the beginning, while preserving the rest
+        """
+        input_filter = {"type": "not",
+                        "filter":
+                            {"type": "or",
+                             "filters": [
+                                 {
+                                     "type": "and",
+                                     "filters": [
+                                         {
+                                             "type": ">=",
+                                             "left": {"type": "field", "field": "price"},
+                                             "right": {"type": "value", "value": 42}
+                                         },
+                                         {
+                                             "type": "in",
+                                             "left": {"type": "field", "field": "in_stock"},
+                                             "right": {"type": "value", "value": 't'}
+                                         }
+                                     ]
+                                 },
+                                 {
+                                     "type": "in",
+                                     "left": {"type": "field", "field": "category"},
+                                     "right": {"type": "value", "value": ["cat1", "cat17", "cat42"]}
+                                 },
+                                 {
+                                     "type": "startswith",
+                                     "left": {"type": "field", "field": "name"},
+                                     "right": {"type": "value", "value": "prefix"}
+                                 }
+                             ]
+                             }
+                        }
+
+        expected_value = {"type": "not",
+                          "field":
+                              {"type": "or",
+                               "fields": [
+                                   {
+                                       "type": "and",
+                                       "fields": [
+                                           {
+                                               "type": "bound",
+                                               "dimension": "price",
+                                               "lower": 42,
+                                               "lowerStrict": False,
+                                               "ordering": "numeric"
+                                           },
+                                           {
+                                               "type": "selector",
+                                               "dimension": "in_stock",
+                                               "value": 't'
+                                           }
+                                       ]
+                                   },
+                                   {
+                                       "type": "or",
+                                       "fields": [
+                                           {
+                                               "type": "selector",
+                                               "dimension": "category",
+                                               "value": "cat1"
+                                           },
+                                           {
+                                               "type": "selector",
+                                               "dimension": "category",
+                                               "value": "cat17"
+                                           },
+                                           {
+                                               "type": "selector",
+                                               "dimension": "category",
+                                               "value": "cat42"
+                                           }
+                                       ]
+                                   },
+                                   {
+                                       "type": "like",
+                                       "pattern": "prefix%",
+                                       "dimension": "name"
+                                   }
+                               ]
+                               }
+                          }
+
         self.assertEqual(druidry.data_source.translate_filter(input_filter), expected_value)
