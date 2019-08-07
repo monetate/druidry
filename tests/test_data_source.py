@@ -534,3 +534,29 @@ class TestFilters(unittest.TestCase):
                           }
 
         self.assertEqual(druidry.data_source.translate_filter(input_filter), expected_value)
+
+    def test_startswith_value_filter(self):
+        input_filter = {
+            "type": "startswith",
+            "right": {"type": "value", "value": ["Chrom","Fire"]},
+            "left": {"type": "field", "field": "browser"}
+        }
+        expected_filter = {
+            "type": "regex",
+            "dimension": "browser",
+            "pattern": "^Chrom.*|^Fire.*"
+        }
+        self.assertEqual(druidry.data_source.translate_filter(input_filter), expected_filter)
+
+    def test_endwith_value_filter(self):
+        input_filter = {
+            "type": "endwith",
+            "right": {"type": "value", "value": ["Chrom","Fire"]},
+            "left": {"type": "field", "field": "browser"}
+        }
+        expected_filter = {
+            "type": "regex",
+            "dimension": "browser",
+            "pattern": ".*Chrom$|.*Fire$"
+        }
+        self.assertEqual(druidry.data_source.translate_filter(input_filter), expected_filter)
