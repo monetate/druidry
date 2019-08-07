@@ -311,7 +311,7 @@ def like_filter(f):
     return LikeFilter(
         dimension=f['left']['field'], pattern=pattern)
 
-def regex_filter(f):
+def regex_like_filter(f):
     if f['left']['type'] != 'field' or f['right']['type'] != 'value':
         raise ValueError('Druid does not support dynamic patterns.')
     affix_start = f['type'] == 'startswith'
@@ -345,8 +345,8 @@ FILTER_TYPES = {
     '<=': inequality_filter,
     'in': contains_filter,
     'not in': contains_filter,
-    'endwith': regex_filter,
-    'startswith': regex_filter,
+    'endwith': regex_like_filter,
+    'startswith': regex_like_filter,
     'and': combine_filter,
     'or': combine_filter,
     'not': negate_filter
