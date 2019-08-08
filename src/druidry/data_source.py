@@ -30,7 +30,7 @@ DataSourceView
     queries.
 """
 from . import aggregations
-from .filters import Filter, AndFilter, BoundFilter, ColumnComparisonFilter, LikeFilter, OrFilter, SelectorFilter, NotFilter
+from .filters import Filter, AndFilter, BoundFilter, ColumnComparisonFilter, LikeFilter, OrFilter, RegexFilter, SelectorFilter, NotFilter
 from .intervals import Interval
 from .queries import GroupByQuery, TimeseriesQuery
 from .results import QueryResult
@@ -311,6 +311,13 @@ def like_filter(f):
     return LikeFilter(
         dimension=f['left']['field'], pattern=pattern)
 
+def regex_like_filter(f):
+    if f['left']['type'] != 'field' or f['right']['type'] != 'value':
+        raise ValueError('Druid does not support dynamic patterns.')
+    affix_start = f['type'] == 'startswith'
+    pattern = "|".join([('^{}.*' if affix_start else '.*{}$').format(value) for value in f['right']['value']])
+    return RegexFilter(
+        dimension=f['left']['field'], pattern=pattern)
 
 def combine_filter(f):
     filters = [translate_filter(sf) for sf in f['filters'] if translate_filter(sf)]
@@ -338,8 +345,8 @@ FILTER_TYPES = {
     '<=': inequality_filter,
     'in': contains_filter,
     'not in': contains_filter,
-    'endwith': like_filter,
-    'startswith': like_filter,
+    'endwith': regex_like_filter,
+    'startswith': regex_like_filter,
     'and': combine_filter,
     'or': combine_filter,
     'not': negate_filter
