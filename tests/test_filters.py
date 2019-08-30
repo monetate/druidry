@@ -170,6 +170,19 @@ class FilterTest(unittest.TestCase):
                 "pattern": "Chrom%"
             })
 
+    def test_create_list_filter(self):
+        self.assertEqual(
+            druidry.filters.ListFilter(dimension='browser', values=['Chrome', 'Firefox', '', None]),
+            {
+                "type": "extraction",
+                "dimension": "browser",
+                "outputName": "browser",
+                "extractionFn": {
+                    "type": "partial",
+                    "expr": "^(Chrome|Firefox)$",
+                }
+            })
+
     def test_create_bound_filter(self):
         self.assertEqual(
             druidry.filters.BoundFilter(dimension='duration', lower=0, upper=10, lower_strict=True, upper_strict=False, ordering='numeric'),
