@@ -49,7 +49,6 @@ pipeline {
             when {
                 anyOf {
                     branch 'master';
-                    branch 'patch-*';
                     changelog '.*clean.*';
                 }
             }
