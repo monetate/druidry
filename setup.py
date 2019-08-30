@@ -33,7 +33,7 @@ setup(
     ],
     extras_require={
         'results': [
-            'pandas>=0.12.0'
+            'pandas>=0.12.0,<0.21'
         ],
         'doc': [
             "Sphinx==1.4",
