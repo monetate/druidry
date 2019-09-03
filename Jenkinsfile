@@ -76,6 +76,40 @@ pipeline {
                 }
             }
         }
+
+        stage ('Auto-build wheel on master') {
+            when {
+                allOf {
+                    branch 'master';
+                    changelog '^((?!Bump micro version for master commit).)*$'; // does not include this string
+                }
+            }
+            steps {
+                withEnv(["PATH=${env.WORKSPACE}/venv/bin:${env.PATH}"]) {
+                    script {
+                        VERSION_STRING = sh(script: "cat src/druidry/VERSION", returnStdout: true).trim()
+                        echo "version string ${VERSION_STRING}"
+                        V_MAJOR = sh(script: "echo ${VERSION_STRING} | cut -d '.' -f1", returnStdout: true).trim()
+                        V_MINOR = sh(script: "echo ${VERSION_STRING} | cut -d '.' -f2", returnStdout: true).trim()
+                        V_MICRO = sh(script: "echo ${VERSION_STRING} | cut -d '.' -f3", returnStdout: true).trim()
+                        echo "version split ${V_MAJOR}-${V_MINOR}-${V_MICRO}"
+                        V_MICRO_NEW = sh(script: "expr ${V_MICRO} + 1", returnStdout: true).trim()
+                        echo "new micro ${V_MICRO_NEW}"
+                        NEW_VERSION_STRING = sh(script: "echo ${V_MAJOR}.${V_MINOR}.${V_MICRO_NEW}", returnStdout: true).trim()
+                        sh "echo ${NEW_VERSION_STRING} > src/druidry/VERSION"
+                        sh "git add src/druidry/VERSION"
+                        sh "git commit -m 'Bump micro version for master commit'"
+                        sh "git tag -a -m 'Tag version ${NEW_VERSION_STRING}' ${NEW_VERSION_STRING}"
+                        sh "git push origin HEAD:${GIT_BRANCH} --follow-tags"
+                    }
+
+                    sh "rm -rf ${WORKSPACE}/dist/"
+                    sh "python setup.py bdist_wheel --universal"
+                    sh "pip install twine"
+                    sh "twine upload --repository local ${WORKSPACE}/dist/*.whl"
+                }
+            }
+        }
     }
     post {
         always {
