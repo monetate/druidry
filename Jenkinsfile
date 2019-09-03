@@ -94,7 +94,7 @@ pipeline {
                         echo "new micro ${V_MICRO_NEW}"
                         NEW_VERSION_STRING = sh(script: "echo ${V_MAJOR}.${V_MINOR}.${V_MICRO_NEW}", returnStdout: true).trim()
                         sh "echo ${NEW_VERSION_STRING} > src/druidry/VERSION"
-                        sh "git add sry/druidry/VERSION"
+                        sh "git add src/druidry/VERSION"
                         sh "git commit -m 'Bump micro version for master commit'"
                         sh "git tag -a -m 'Tag version ${NEW_VERSION_STRING}' ${NEW_VERSION_STRING}"
                         sh "git push origin --tags"
