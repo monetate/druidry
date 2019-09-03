@@ -100,7 +100,7 @@ pipeline {
                         sh "git add src/druidry/VERSION"
                         sh "git commit -m 'Bump micro version for master commit'"
                         sh "git tag -a -m 'Tag version ${NEW_VERSION_STRING}' ${NEW_VERSION_STRING}"
-                        sh "git push origin --follow-tags"
+                        sh "git push origin HEAD:${GIT_BRANCH} --follow-tags"
                     }
 
                     sh "rm -rf ${WORKSPACE}/dist/"
