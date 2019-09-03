@@ -21,7 +21,7 @@ pipeline {
         stage("Check if we should build") {
             steps {
                 script {
-                    RECENT_HISTORY = sh(script: "git log --since='4 days ago' --format=oneline origin/${GIT_BRANCH}", returnStdout: true).trim()
+                    RECENT_HISTORY = sh(script: "git log --since='1 month ago' --format=oneline origin/${GIT_BRANCH}", returnStdout: true).trim()
                     echo "${RECENT_HISTORY}"
                     if ("${RECENT_HISTORY}" == "") {
                         githubNotify context:'Check Age', description:'Skipping build because this branch is too old, please merge or rebase', status: 'FAILURE'
@@ -29,7 +29,6 @@ pipeline {
                     }
                     githubNotify context:'Check Age', status: 'SUCCESS', description:'This PR is new enough'
                 }
-
             }
         }
 
@@ -78,7 +77,7 @@ pipeline {
         stage ('Run Tests') {
             steps {
                 withEnv(["PATH=${env.WORKSPACE}/venv/bin:${env.PATH}"]) {
-                  githubNotify context:'Run Tests', status: 'PENDING', description:'running tests'
+                    githubNotify context:'Run Tests', status: 'PENDING', description:'running tests'
                     sh "python -m unittest tests"
                 }
             }

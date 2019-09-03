@@ -33,7 +33,7 @@ setup(
     ],
     extras_require={
         'results': [
-            'pandas>=0.12.0,<0.21'
+            'pandas>=0.12.0,<0.21'  # our code breaks somewhere above 0.20, tests catch the errors
         ],
         'doc': [
             "Sphinx==1.4",

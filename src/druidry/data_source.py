@@ -106,10 +106,9 @@ class NumericDimension(Dimension):
 
 class CategoricalDimension(Dimension):
 
-    def __init__(self, choices=None, has_other_choice=None, allow_multiple=True, **kwargs):
+    def __init__(self, choices=None, allow_multiple=True, **kwargs):
         self._choices = choices
         self.allow_multiple = allow_multiple
-        self.has_other_choice = has_other_choice
         super(CategoricalDimension, self).__init__(**kwargs)
 
     type = 'categorical'

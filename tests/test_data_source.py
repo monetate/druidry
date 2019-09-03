@@ -32,9 +32,7 @@ class TestDataSource(unittest.TestCase):
 
     def test_get_query(self):
         class WikipediaDataSource(druidry.data_source.DataSourceView):
-            channel = druidry.data_source.CategoricalDimension(
-                dimension='channel', choices=['email', 'web', 'mobile'],
-                has_other_choice=True)
+            channel = druidry.data_source.CategoricalDimension(dimension='channel', choices=['email', 'web', 'mobile'])
 
             is_anonymous = druidry.data_source.CategoricalDimension(
                 dimension='isAnonymous', choices=['true', 'false'], name='is_anonymous')
