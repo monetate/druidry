@@ -89,7 +89,7 @@ pipeline {
                         V_MAJOR = sh(script: "${VERSION_LIST[0]}", returnStdout: true).trim()
                         V_MINOR = sh(script: "${VERSION_LIST[1]}", returnStdout: true).trim()
                         V_MICRO = sh(script: "${VERSION_LIST[2]}", returnStdout: true).trim()
-                        V_MICRO_NEW = sh(script: "$((V_MICRO + 1))", returnStdout: true).trim()
+                        V_MICRO_NEW = sh(script: "expr ${V_MICRO} + 1", returnStdout: true).trim()
                         NEW_VERSION_STRING = sh(script: "${V_MAJOR}.${V_MINOR}.${V_MICRO}", returnStdout: true).trim()
                         sh "echo ${NEW_VERSION_STRING} > src/druidry/VERSION"
                         sh "git add sry/druidry/VERSION"
