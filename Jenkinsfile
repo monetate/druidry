@@ -47,7 +47,7 @@ pipeline {
                 sh "${VENV} ${WORKSPACE}/venv"
                 withEnv(["PATH=${env.WORKSPACE}/venv/bin:${env.PATH}"]) {
                     githubNotify context:'Python Requirements', description:'Installing python requirements',  status: 'PENDING'
-                    sh "pip install .[results,doc,test]"
+                    sh "pip install -e .[results,doc,test]" // install editable so it doesn't build a cached wheel
                 }
             }
             post {
