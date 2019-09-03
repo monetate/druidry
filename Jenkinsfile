@@ -86,11 +86,9 @@ pipeline {
                     script {
                         VERSION_STRING = sh(script: "cat src/druidry/VERSION", returnStdout: true).trim()
                         echo "version string ${VERSION_STRING}"
-                        VERSION_LIST = sh(script: "echo ${VERSION_STRING} | tr '.' ' '", returnStdout: true).trim()
-                        echo "version list ${VERSION_LIST}"
-                        V_MAJOR = sh(script: "echo ${VERSION_LIST[0]}", returnStdout: true).trim()
-                        V_MINOR = sh(script: "echo ${VERSION_LIST[1]}", returnStdout: true).trim()
-                        V_MICRO = sh(script: "echo ${VERSION_LIST[2]}", returnStdout: true).trim()
+                        V_MAJOR = sh(script: "IFS='.' echo ${VERSION_STRING[0]}", returnStdout: true).trim()
+                        V_MINOR = sh(script: "IFS='.' echo ${VERSION_STRING[1]}", returnStdout: true).trim()
+                        V_MICRO = sh(script: "IFS='.' echo ${VERSION_STRING[2]}", returnStdout: true).trim()
                         echo "version split ${V_MAJOR}-${V_MINOR}-${V_MICRO}"
                         V_MICRO_NEW = sh(script: "expr ${V_MICRO} + 1", returnStdout: true).trim()
                         NEW_VERSION_STRING = sh(script: "${V_MAJOR}.${V_MINOR}.${V_MICRO}", returnStdout: true).trim()
