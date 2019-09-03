@@ -80,7 +80,7 @@ pipeline {
         stage ('Auto-build wheel on master') {
             when {
                 allOf {
-                    branch 'auto-build-on-master';
+                    branch 'master';
                     changelog '^((?!Bump micro version for master commit).)*$'; // does not include this string
                 }
             }
