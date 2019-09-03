@@ -18,20 +18,6 @@ pipeline {
         timestamps()
     }
     stages {
-        stage("Check if we should build") {
-            steps {
-                script {
-                    RECENT_HISTORY = sh(script: "git log --since='1 month ago' --format=oneline origin/${GIT_BRANCH}", returnStdout: true).trim()
-                    echo "${RECENT_HISTORY}"
-                    if ("${RECENT_HISTORY}" == "") {
-                        githubNotify context:'Check Age', description:'Skipping build because this branch is too old, please merge or rebase', status: 'FAILURE'
-                        error "Skipping build because the recent log is too old, please rebase or add new commits"
-                    }
-                    githubNotify context:'Check Age', status: 'SUCCESS', description:'This PR is new enough'
-                }
-            }
-        }
-
         stage("Slack start message") {
             steps {
                 script { slack.success(this, ":pipeline: ${SYSTEM_NAME} pipeline started") }
