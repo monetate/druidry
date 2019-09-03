@@ -85,13 +85,13 @@ pipeline {
                 withEnv(["PATH=${env.WORKSPACE}/venv/bin:${env.PATH}"]) {
                     script {
                         VERSION_STRING = sh(script: "cat src/druidry/VERSION", returnStdout: true).trim()
-                        VERSION_LIST = sh(script: "echo $VERSION_STRING | tr '.' ' '", returnStdout: true).trim()
+                        VERSION_LIST = sh(script: "echo ${VERSION_STRING} | tr '.' ' '", returnStdout: true).trim()
                         V_MAJOR=${VERSION_LIST[0]}
                         V_MINOR=${VERSION_LIST[1]}
                         V_MICRO=${VERSION_LIST[2]}
                         V_MICRO_NEW=$((V_MICRO + 1))
                         NEW_VERSION_STRING = sh(script: "${V_MAJOR}.${V_MINOR}.${V_MICRO}", returnStdout: true).trim()
-                        sh "echo $NEW_VERSION_STRING > src/druidry/VERSION"
+                        sh "echo ${NEW_VERSION_STRING} > src/druidry/VERSION"
                         sh "git add sry/druidry/VERSION"
                         sh "git commit -m 'Bump micro version for master commit'"
                         sh "git tag -a -m 'Tag version ${NEW_VERSION_STRING}' ${NEW_VERSION_STRING}"
