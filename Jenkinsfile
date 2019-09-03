@@ -78,9 +78,12 @@ pipeline {
         }
 
         stage ('Auto-build wheel on master') {
-            //when {
-            //    branch 'master';
-            //}
+            when {
+                allOf {
+                    branch 'auto-build-on-master';
+                    changelog '^((?!Bump micro version for master commit).)*$'; // does not include this string
+                }
+            }
             steps {
                 withEnv(["PATH=${env.WORKSPACE}/venv/bin:${env.PATH}"]) {
                     script {
@@ -97,7 +100,7 @@ pipeline {
                         sh "git add src/druidry/VERSION"
                         sh "git commit -m 'Bump micro version for master commit'"
                         sh "git tag -a -m 'Tag version ${NEW_VERSION_STRING}' ${NEW_VERSION_STRING}"
-                        sh "git push origin --tags"
+                        sh "git push origin --follow-tags"
                     }
 
                     sh "rm -rf ${WORKSPACE}/dist/"
