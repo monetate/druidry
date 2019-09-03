@@ -4,6 +4,7 @@ Wrappers around dicts for working with filters.
 Because all of these objects are dicts, they serialize to JSON like dicts.
 """
 import numbers
+import re
 import sys
 
 from . import caseconversion
@@ -51,6 +52,11 @@ class Filter(typeddict.TypedDict):
         'like': {
             'dimension': basestring,
             'pattern': basestring
+        },
+        'extraction': {
+            'dimension': basestring,
+            'outputName': basestring,
+            'extractionFn': dict
         },
         'not': {
             'field': dict
@@ -306,6 +312,42 @@ class LikeFilter(Filter):
             raise ValueError("`pattern` is required to be a string")
         super(LikeFilter, self).__init__(
             type='like', dimension=dimension, pattern=pattern, **kwargs)
+
+    __init__.__doc__ = __doc__
+
+
+class ListFilter(Filter):
+    """
+    Convenience class for creating a list filtered.
+
+    See https://druid.io/docs/0.8.3/querying/dimensionspecs.html
+    This implements the partial regex extractor for 0.8.3, but can be
+    upgraded to listFiltered for latest druid
+
+    Required keyword arguments:
+        dimenson: str
+            The dimension to compare.
+        values: [str]
+            The values to match
+    """
+
+    @caseconversion.camel_case_kwargs
+    def __init__(self, dimension=None, values=None, **kwargs):
+        if not isinstance(dimension, basestring):
+            raise ValueError("`dimension` is required to be a string")
+        if not isinstance(values, list):
+            raise ValueError("`values` is required to be a list")
+        values = [re.escape(v) for v in values if v]
+        regex_format = '^({})?$' if None in values or '' in values else '^({})$'
+        super(ListFilter, self).__init__(
+            type='extraction',
+            dimension=dimension,
+            outputName=dimension,
+            extractionFn={
+                'type': 'partial',
+                'expr': regex_format.format('|'.join(values))
+            },
+            **kwargs)
 
     __init__.__doc__ = __doc__
 

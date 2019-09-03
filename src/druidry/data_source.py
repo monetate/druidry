@@ -30,7 +30,8 @@ DataSourceView
     queries.
 """
 from . import aggregations
-from .filters import Filter, AndFilter, BoundFilter, ColumnComparisonFilter, LikeFilter, OrFilter, RegexFilter, SelectorFilter, NotFilter
+from .filters import (AndFilter, BoundFilter, ColumnComparisonFilter, LikeFilter, ListFilter, OrFilter, RegexFilter,
+                      SelectorFilter, NotFilter)
 from .intervals import Interval
 from .queries import GroupByQuery, TimeseriesQuery
 from .results import QueryResult
@@ -77,7 +78,7 @@ class Dimension(object):
             '{choice}{self.name_suffix}'
         ).format(self=self, choice=choice, operator=operator)
 
-    def create_selector(self, value):
+    def create_selector(self, value, intervals=None, filter_=None):
         return SelectorFilter(dimension=self.dimension, value=value)
 
     def range_selectors(self):
@@ -94,17 +95,6 @@ class Dimension(object):
             for lower, upper in self.ranges
         ]
 
-    @property
-    def config(self):
-        return {
-            'allow_multiple': False,
-            'can_split': self.can_split,
-            'choices': None,
-            'dimension': self.dimension,
-            'name': self.name,
-            'type': self.type
-        }
-
 
 class NumericDimension(Dimension):
 
@@ -116,108 +106,34 @@ class NumericDimension(Dimension):
 
 class CategoricalDimension(Dimension):
 
-    def __init__(self, choices=None, has_other_choice=None, allow_multiple=True, **kwargs):
+    def __init__(self, choices=None, allow_multiple=True, **kwargs):
         self._choices = choices
         self.allow_multiple = allow_multiple
-        self.has_other_choice = has_other_choice
         super(CategoricalDimension, self).__init__(**kwargs)
 
     type = 'categorical'
 
-    @property
-    def choices(self):
-        choices = self._choices() if callable(self._choices) else self._choices
-        return choices.keys() if type(choices) == dict else choices
-
-    @property
-    def choice_labels(self):
-        choices = self._choices() if callable(self._choices) else self._choices
-        if type(choices) == dict:
-            return choices
-        return {choice: choice for choice in choices}
-
-    @property
-    def choice_values(self):
-        return self.choices
-
-    @property
-    def config(self):
-        base_config = Dimension.config.fget(self)
-        choices = [
-            {
-                'value': key,
-                'label': self.choice_labels.get(key, key)
-            }
-            for key in self.all_choices
-        ]
-        return dict(base_config, allow_multiple=self.allow_multiple, choices=choices)
-
-    @property
-    def choice_selectors(self):
-        return [choice for choice in self.choices if choice != 'other']
-
-    @property
-    def other_choice_selectors(self):
-        if self.has_other_choice:
-            return ['other']
-        return []
-
-    @property
-    def all_choices(self):
-        if self.choices:
-            return sorted(self.choice_selectors + self.other_choice_selectors)
-        return []
-
-    def select_all_choices(self):
-        return OrFilter(fields=[
-            self.create_selector(value)
-            for value in self.all_choices
-        ])
+    def choices(self, intervals=None, filter_=None):
+        choices = self._choices(intervals=intervals, filter_=filter_) if callable(self._choices) else self._choices
+        return list(choices.keys()) if isinstance(choices, dict) else choices
 
 
 class GroupedCategoricalDimension(CategoricalDimension):
 
-    def __init__(self, **kwargs):
-        super(GroupedCategoricalDimension, self).__init__(**kwargs)
+    def __init__(self, choices, **kwargs):
+        if not callable(choices):
+            raise ValueError('Choices must be a callable function for GorupedCategorialDimension')
+        super(GroupedCategoricalDimension, self).__init__(choices, **kwargs)
 
-    @property
-    def choices(self):
-        choices = self._choices()
-        return [k for k, v in choices.items()]
+    def get_choice_values(self, key, intervals=None, filter_=None):
+        choices = self._choices(intervals=intervals, filter_=filter_)
+        return choices[key]['group']
 
-    @property
-    def choice_labels(self):
-        choices = self._choices()
-        return {k: v['label'] for k, v in choices.items()}
-
-    @property
-    def choice_values(self):
-        choices = self._choices()
-        return {k: v['group'] for k, v in choices.items()}
-
-    @property
-    def choice_selectors(self):
-        return [choice for choice in self.choices]
-
-    def create_selector(self, key):
+    def create_selector(self, key, intervals, filter_):
         return OrFilter([
             SelectorFilter(dimension=self.dimension, value=value)
-            for value in self.choice_values[key]
+            for value in self.get_choice_values(key, intervals, filter_)
         ])
-
-    @property
-    def config(self):
-        base_config = CategoricalDimension.config.fget(self)
-        choices = [
-            {
-                'value': self.choice_values[key],
-                'label': self.choice_labels[key]
-            }
-            for key in self.all_choices
-        ]
-        return dict(
-            base_config, choices=choices,
-            allow_multiple=self.allow_multiple)
 
 
 class Metric(object):
@@ -233,14 +149,6 @@ class ComplexMetric(Metric):
         self.aggregations = [] if aggregations is None else aggregations
         self.post_aggregations = [] if post_aggregations is None else post_aggregations
         self.unit = unit
-
-    @property
-    def config(self):
-        return {
-            'metric': self.metric,
-            'name': self.name,
-            'unit': self.unit
-        }
 
 
 def equality_filter(f):
@@ -311,6 +219,7 @@ def like_filter(f):
     return LikeFilter(
         dimension=f['left']['field'], pattern=pattern)
 
+
 def regex_like_filter(f):
     if f['left']['type'] != 'field' or f['right']['type'] != 'value':
         raise ValueError('Druid does not support dynamic patterns.')
@@ -318,6 +227,7 @@ def regex_like_filter(f):
     pattern = "|".join([('^{}.*' if affix_start else '.*{}$').format(value) for value in f['right']['value']])
     return RegexFilter(
         dimension=f['left']['field'], pattern=pattern)
+
 
 def combine_filter(f):
     filters = [translate_filter(sf) for sf in f['filters'] if translate_filter(sf)]
@@ -387,12 +297,6 @@ class DataSourceView(object):
     def get_filters(self, filters):
         return translate_filter(filters)
 
-    @property
-    def config(self):
-        dimensions = {d.dimension: d.config for d in self.dimensions()}
-        metrics = {m.metric: m.config for m in self.metrics()}
-        return {'dimensions': dimensions, 'metrics': metrics}
-
     def get_metric(self, name):
         return next((m for m in self.metrics() if m.metric == name), None)
 
@@ -415,20 +319,22 @@ class DataSourceView(object):
             aggregations.remove_duplicates(*metrics_postaggs),
             key=aggregations.Aggregation.get_aggregation_name)
 
-    def get_filter_for_dimension_choices(self, dimension):
-        return OrFilter(fields=[
-            dimension.create_selector(choice)
-            for choice in dimension.choices
-        ])
+    def get_filter_for_dimension_choices(self, dimension, intervals=None, filter_=None):
+        choices = dimension.choices(intervals, filter_)
+        return (OrFilter(fields=[dimension.create_selector(choice, intervals, filter_) for choice in choices]),
+                ListFilter(dimension.dimension, choices))
 
-    def get_split_exclusion_filter(self, splits):
+    def get_split_exclusion_filter(self, splits, intervals=None, filter_=None):
         dimensions = [self.get_dimension(split) for split in splits]
         if dimensions:
-            return AndFilter(fields=[
-                self.get_filter_for_dimension_choices(dimension)
-                for dimension in dimensions
-            ])
-        return None
+            filters = []
+            dimension_filters = []
+            for dimension in dimensions:
+                f, df = self.get_filter_for_dimension_choices(dimension, intervals, filter_)
+                filters.append(f)
+                dimension_filters.append(df)
+            return (AndFilter(fields=filters), dimension_filters)
+        return (None, None)
 
     def get_query(
             self, end=None, start=None, metrics=None, splits=None,
@@ -436,18 +342,6 @@ class DataSourceView(object):
             exclude_other_splits=False):
 
         filter_ = self.get_filters(filters)
-
-        split_exclusion_filter = None
-        if splits and exclude_other_splits:
-            split_exclusion_filter = self.get_split_exclusion_filter(splits)
-
-        if split_exclusion_filter and filter_:
-            filter_ = AndFilter(fields=[filter_, split_exclusion_filter])
-        elif split_exclusion_filter:
-            filter_ = split_exclusion_filter
-
-        aggs = self.get_aggregations(metrics)
-        postaggs = self.get_post_aggregations(metrics)
 
         if intervals is None:
             if end is None:
@@ -457,14 +351,32 @@ class DataSourceView(object):
             else:
                 intervals = Interval(end=end, start=start)
 
+        split_exclusion_filter = None
+        split_exclusion_dimension = None
+        if splits and exclude_other_splits:
+            split_exclusion_filter, split_exclusion_dimension = \
+                self.get_split_exclusion_filter(splits, intervals, filter_)
+
+        if split_exclusion_filter and filter_:
+            filter_ = AndFilter(fields=[filter_, split_exclusion_filter])
+        elif split_exclusion_filter:
+            filter_ = split_exclusion_filter
+
+        aggs = self.get_aggregations(metrics)
+        postaggs = self.get_post_aggregations(metrics)
+
         kwargs = {
             'aggregations': aggs,
             'granularity': granularity,
             'intervals': intervals,
-            'post_aggregations': postaggs
+            'post_aggregations': postaggs,
         }
-
-        query = GroupByQuery(dimensions=splits, **kwargs) if splits else TimeseriesQuery(**kwargs)
+        if splits:
+            query = GroupByQuery(
+                dimensions=split_exclusion_dimension if split_exclusion_dimension else splits,
+                **kwargs)
+        else:
+            query = TimeseriesQuery(**kwargs)
         return query.filter(filter_) if filter_ else query
 
     def filter_result(self, result, metric):

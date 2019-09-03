@@ -30,69 +30,9 @@ class TestDimension(unittest.TestCase):
 
 class TestDataSource(unittest.TestCase):
 
-    def test_create_data_source(self):
-        class WikipediaDataSource(druidry.data_source.DataSourceView):
-            channel = druidry.data_source.CategoricalDimension(
-                dimension='channel', choices=['email', 'web', 'mobile'],
-                has_other_choice=True)
-
-            user_count = druidry.aggregations.Aggregation(
-                'longSum', field_name='count', name='count')
-
-            anonymous_user_count = user_count.filter(
-                channel.create_selector('true'), name='anonymous_user_count')
-
-            anonymous_rate = druidry.data_source.ComplexMetric(
-                metric='anonymous_rate', name='Anonymous rate',
-                aggregations=[user_count, anonymous_user_count],
-                post_aggregations=[anonymous_user_count / user_count]
-            )
-
-        data_source = WikipediaDataSource()
-
-        expected_value = {
-            "metrics": {
-                "anonymous_rate": {
-                    "metric": "anonymous_rate",
-                    "name": "Anonymous rate",
-                    "unit": None
-                }
-            },
-            "dimensions": {
-                "channel": {
-                    "allow_multiple": True,
-                    "can_split": True,
-                    "name": "channel",
-                    "type": "categorical",
-                    "dimension": "channel",
-                    "choices": [
-                        {
-                            "value": "email",
-                            "label": "email"
-                        },
-                        {
-                            "value": "mobile",
-                            "label": "mobile"
-                        },
-                        {
-                            "value": "other",
-                            "label": "other"
-                        },
-                        {
-                            "value": "web",
-                            "label": "web"
-                        }
-                    ]
-                }
-            }
-        }
-        self.assertEqual(data_source.config, expected_value)
-
     def test_get_query(self):
         class WikipediaDataSource(druidry.data_source.DataSourceView):
-            channel = druidry.data_source.CategoricalDimension(
-                dimension='channel', choices=['email', 'web', 'mobile'],
-                has_other_choice=True)
+            channel = druidry.data_source.CategoricalDimension(dimension='channel', choices=['email', 'web', 'mobile'])
 
             is_anonymous = druidry.data_source.CategoricalDimension(
                 dimension='isAnonymous', choices=['true', 'false'], name='is_anonymous')
@@ -392,7 +332,7 @@ class TestFilters(unittest.TestCase):
                 {
                     "type": "startswith",
                     "left": {"type": "field", "field": "name"},
-                    "right": {"type": "value", "value": "prefix"}
+                    "right": {"type": "value", "value": ["prefix", ]}
                 }
             ]
         }
@@ -437,8 +377,8 @@ class TestFilters(unittest.TestCase):
                     ]
                 },
                 {
-                    "type": "like",
-                    "pattern": "prefix%",
+                    "type": "regex",
+                    "pattern": "^prefix.*",
                     "dimension": "name"
                 }
             ]
@@ -477,7 +417,7 @@ class TestFilters(unittest.TestCase):
                                  {
                                      "type": "startswith",
                                      "left": {"type": "field", "field": "name"},
-                                     "right": {"type": "value", "value": "prefix"}
+                                     "right": {"type": "value", "value": ["prefix", ]}
                                  }
                              ]
                              }
@@ -525,8 +465,8 @@ class TestFilters(unittest.TestCase):
                                        ]
                                    },
                                    {
-                                       "type": "like",
-                                       "pattern": "prefix%",
+                                       "type": "regex",
+                                       "pattern": "^prefix.*",
                                        "dimension": "name"
                                    }
                                ]
@@ -538,7 +478,7 @@ class TestFilters(unittest.TestCase):
     def test_startswith_value_filter(self):
         input_filter = {
             "type": "startswith",
-            "right": {"type": "value", "value": ["Chrom","Fire"]},
+            "right": {"type": "value", "value": ["Chrom", "Fire"]},
             "left": {"type": "field", "field": "browser"}
         }
         expected_filter = {
@@ -551,7 +491,7 @@ class TestFilters(unittest.TestCase):
     def test_endwith_value_filter(self):
         input_filter = {
             "type": "endwith",
-            "right": {"type": "value", "value": ["Chrom","Fire"]},
+            "right": {"type": "value", "value": ["Chrom", "Fire"]},
             "left": {"type": "field", "field": "browser"}
         }
         expected_filter = {
