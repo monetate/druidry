@@ -106,7 +106,7 @@ pipeline {
                     sh "rm -rf ${WORKSPACE}/dist/"
                     sh "python setup.py bdist_wheel --universal"
                     sh "pip install twine"
-                    //sh "twine upload --repository local ${WORKSPACE}/dist/*.whl"
+                    sh "twine upload --repository local ${WORKSPACE}/dist/*.whl"
                 }
             }
         }
