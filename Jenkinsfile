@@ -91,7 +91,8 @@ pipeline {
                         V_MICRO = sh(script: "echo ${VERSION_STRING} | cut -d '.' -f3", returnStdout: true).trim()
                         echo "version split ${V_MAJOR}-${V_MINOR}-${V_MICRO}"
                         V_MICRO_NEW = sh(script: "expr ${V_MICRO} + 1", returnStdout: true).trim()
-                        NEW_VERSION_STRING = sh(script: "${V_MAJOR}.${V_MINOR}.${V_MICRO}", returnStdout: true).trim()
+                        echo "new micro ${V_MICRO_NEW}"
+                        NEW_VERSION_STRING = sh(script: "echo ${V_MAJOR}.${V_MINOR}.${V_MICRO_NEW}", returnStdout: true).trim()
                         sh "echo ${NEW_VERSION_STRING} > src/druidry/VERSION"
                         sh "git add sry/druidry/VERSION"
                         sh "git commit -m 'Bump micro version for master commit'"
