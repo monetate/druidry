@@ -324,11 +324,11 @@ class DataSourceView(object):
                 ListFilter(dimension.dimension, split, choices))
 
     def get_split_exclusion_filter(self, splits, intervals=None, filter_=None):
-        dimensions = [(split, self.get_dimension(split)) for split in splits]
-        if dimensions:
+        if splits:
             filters = []
             dimension_filters = []
-            for split, dimension in dimensions:
+            for split in splits:
+                dimension = self.get_dimension(split)
                 f, df = self.get_filter_for_dimension_choices(dimension, split, intervals, filter_)
                 filters.append(f)
                 dimension_filters.append(df)
