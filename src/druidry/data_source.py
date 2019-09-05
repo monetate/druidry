@@ -275,11 +275,6 @@ class DataSourceView(object):
         pass
 
     @classmethod
-    def dimensions(cls):
-        items = [getattr(cls, attr) for attr in dir(cls)]
-        return [item for item in items if isinstance(item, Dimension)]
-
-    @classmethod
     def metrics(cls):
         items = [getattr(cls, attr) for attr in dir(cls)]
         return [item for item in items if isinstance(item, Metric)]
@@ -301,7 +296,11 @@ class DataSourceView(object):
         return next((m for m in self.metrics() if m.metric == name), None)
 
     def get_dimension(self, name):
-        return next((d for d in self.dimensions() if d.dimension == name), None)
+        dimension = getattr(self, name)
+        if isinstance(dimension, Dimension):
+            return dimension
+        else:
+            None
 
     def get_aggregations(self, metrics):
         metrics_aggs = itertools.chain.from_iterable(
@@ -319,18 +318,18 @@ class DataSourceView(object):
             aggregations.remove_duplicates(*metrics_postaggs),
             key=aggregations.Aggregation.get_aggregation_name)
 
-    def get_filter_for_dimension_choices(self, dimension, intervals=None, filter_=None):
+    def get_filter_for_dimension_choices(self, dimension, split, intervals=None, filter_=None):
         choices = dimension.choices(intervals, filter_)
         return (OrFilter(fields=[dimension.create_selector(choice, intervals, filter_) for choice in choices]),
-                ListFilter(dimension.dimension, choices))
+                ListFilter(dimension.dimension, split, choices))
 
     def get_split_exclusion_filter(self, splits, intervals=None, filter_=None):
-        dimensions = [self.get_dimension(split) for split in splits]
+        dimensions = [(split, self.get_dimension(split)) for split in splits]
         if dimensions:
             filters = []
             dimension_filters = []
-            for dimension in dimensions:
-                f, df = self.get_filter_for_dimension_choices(dimension, intervals, filter_)
+            for split, dimension in dimensions:
+                f, df = self.get_filter_for_dimension_choices(dimension, split, intervals, filter_)
                 filters.append(f)
                 dimension_filters.append(df)
             return (AndFilter(fields=filters), dimension_filters)
