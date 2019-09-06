@@ -327,14 +327,18 @@ class ListFilter(Filter):
     Required keyword arguments:
         dimenson: str
             The dimension to compare.
+        output_name: str
+            The key to return the value as.
         values: [str]
             The values to match
     """
 
     @caseconversion.camel_case_kwargs
-    def __init__(self, dimension=None, values=None, **kwargs):
+    def __init__(self, dimension=None, output_name=None, values=None, **kwargs):
         if not isinstance(dimension, basestring):
             raise ValueError("`dimension` is required to be a string")
+        if not isinstance(output_name, basestring):
+            raise ValueError("`output_name` is required to be a string")
         if not isinstance(values, list):
             raise ValueError("`values` is required to be a list")
         values = [re.escape(v) for v in values if v]
@@ -342,7 +346,7 @@ class ListFilter(Filter):
         super(ListFilter, self).__init__(
             type='extraction',
             dimension=dimension,
-            outputName=dimension,
+            outputName=output_name,
             extractionFn={
                 'type': 'partial',
                 'expr': regex_format.format('|'.join(values))
