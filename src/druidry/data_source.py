@@ -31,7 +31,7 @@ DataSourceView
 """
 from . import aggregations
 from .filters import (AndFilter, BoundFilter, ColumnComparisonFilter, LikeFilter, ListFilter, OrFilter, RegexFilter,
-                      SelectorFilter, NotFilter)
+                      SelectorFilter, NotFilter, InFilter)
 from .intervals import Interval
 from .queries import GroupByQuery, TimeseriesQuery
 from .results import QueryResult
@@ -158,7 +158,19 @@ def equality_filter(f):
     if left['type'] == 'field' and right['type'] == 'field':
         result = ColumnComparisonFilter(dimensions=[left['field'], right['field']])
     elif left['type'] == 'field' and right['type'] == 'value':
-        result = SelectorFilter(dimension=left['field'], value=right['value'])
+        fields = [
+            SelectorFilter(
+                dimension=left['field'],
+                value=value)
+            for value in right['value']
+        ]
+        if len(fields) == 0:
+            return None
+        if len(fields) == 1:
+            result = fields[0]
+        else:
+            result = OrFilter(fields=fields)
+
     elif left['type'] == 'value' and right['type'] == 'field':
         result = SelectorFilter(dimension=right['field'], value=left['value'])
     else:
@@ -211,6 +223,23 @@ def contains_filter(f):
         return filter_.negate()
 
 
+def regex_contain_filter(f):
+    if f['left']['type'] != 'field' or f['right']['type'] != 'value':
+        raise ValueError('Druid does not support dynamic patterns.')
+    pattern = "|".join([('.*{}.*').format(value) for value in f['right']['value']])
+    if f['type'] == 'not contains':
+        return RegexFilter(
+        dimension=f['left']['field'], pattern=pattern).negate()
+    return RegexFilter(
+        dimension=f['left']['field'], pattern=pattern)
+
+def in_filter(f):
+    if f['left']['type'] != 'field' or f['right']['type'] != 'value':
+        raise ValueError('Druid does not support dynamic containment checks.')
+    if f['type'] == 'in':
+        return InFilter(dimension=f['left']['field'], value=f['right']['value'])
+    return InFilter(dimension=f['left']['field'], value=f['right']['value']).negate()
+
 def like_filter(f):
     if f['left']['type'] != 'field' or f['right']['type'] != 'value':
         raise ValueError('Druid does not support dynamic like patterns.')
@@ -223,8 +252,11 @@ def like_filter(f):
 def regex_like_filter(f):
     if f['left']['type'] != 'field' or f['right']['type'] != 'value':
         raise ValueError('Druid does not support dynamic patterns.')
-    affix_start = f['type'] == 'startswith'
+    affix_start = f['type'] == 'startswith' or f['type'] == 'not startswith'
     pattern = "|".join([('^{}.*' if affix_start else '.*{}$').format(value) for value in f['right']['value']])
+    if f['type'] == 'not startswith':
+        return RegexFilter(
+        dimension=f['left']['field'], pattern=pattern).negate()
     return RegexFilter(
         dimension=f['left']['field'], pattern=pattern)
 
@@ -253,10 +285,13 @@ FILTER_TYPES = {
     '>': inequality_filter,
     '<': inequality_filter,
     '<=': inequality_filter,
-    'in': contains_filter,
-    'not in': contains_filter,
+    'in': in_filter,
+    'not in': in_filter,
+    'contains': regex_contain_filter,
+    'not contains': regex_contain_filter,
     'endwith': regex_like_filter,
     'startswith': regex_like_filter,
+    'not startswith': regex_like_filter,
     'and': combine_filter,
     'or': combine_filter,
     'not': negate_filter
