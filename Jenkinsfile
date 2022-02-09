@@ -9,7 +9,7 @@ import org.monetate.Slack
 def slack = new Slack(steps, REPO_NAME)
 
 pipeline {
-    agent { label "node" }
+    agent { label "node-v8" }
     environment {
         TMPDIR='/var/lib/jenkins/tmp'
         PYTHONUNBUFFERED=1
