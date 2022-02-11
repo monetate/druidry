@@ -157,7 +157,7 @@ def equality_filter(f):
         raise ValueError('Druid does not support constant comparisons.')
     if left['type'] == 'field' and right['type'] == 'field':
         result = ColumnComparisonFilter(dimensions=[left['field'], right['field']])
-    elif left['type'] == 'field' and right['type'] == 'value':
+    elif left['type'] == 'field' and right['type'] == 'value' and type(right['value']==list):
         fields = [
             SelectorFilter(
                 dimension=left['field'],
@@ -170,7 +170,8 @@ def equality_filter(f):
             result = fields[0]
         else:
             result = OrFilter(fields=fields)
-
+    elif left['type'] == 'field' and right['type'] == 'value':
+        result = SelectorFilter(dimension=left['field'], value=right['value'])
     elif left['type'] == 'value' and right['type'] == 'field':
         result = SelectorFilter(dimension=right['field'], value=left['value'])
     else:
