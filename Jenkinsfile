@@ -8,6 +8,13 @@ VENV = 'virtualenv'
 import org.monetate.Slack
 def slack = new Slack(steps, REPO_NAME)
 
+// Abort superseded builds on non-mainline branches; mainline (master/main/patch-*) builds every commit.
+if (!isMainlineBranch()) {
+    properties([
+        disableConcurrentBuilds(abortPrevious: true),
+    ])
+}
+
 pipeline {
     agent { label "node-v8" }
     environment {
