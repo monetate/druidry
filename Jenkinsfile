@@ -9,8 +9,15 @@ import org.monetate.Slack
 def slack = new Slack(steps, REPO_NAME)
 
 // Abort superseded builds on non-mainline branches; mainline (master/main/patch-*) builds every commit.
-if (!isMainlineBranch()) {
+// Both day and count caps are required -- a day-only rotator keeps every build a busy
+// job produces inside the window, which is unbounded disk on the controller.
+if (isMainlineBranch()) {
     properties([
+        buildDiscarder(logRotator(daysToKeepStr: '60', numToKeepStr: '100')),
+    ])
+} else {
+    properties([
+        buildDiscarder(logRotator(daysToKeepStr: '30', numToKeepStr: '5')),
         disableConcurrentBuilds(abortPrevious: true),
     ])
 }
